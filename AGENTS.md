@@ -2,7 +2,7 @@
 
 ## Project Goal
 
-這是四小時 Codex AI-Assisted Engineering 工作坊的台灣麻將練習專案。Starter 只支援花牌規則；課堂 change 是加入「無花牌規則」與 UI 切換。
+這是台灣麻將練習專案。花牌／無花牌起手工具已完成；目前使用者已授權 desktop-playable-mvp，以三個 worktree 平行完成單機摸打與胡牌後合併 main。
 
 ## Required Commands
 
@@ -20,9 +20,9 @@ npm run dev
 - 未確認 proposal、delta spec、design 與 tasks 前，不得直接修改應用程式。
 - 實作前將重要 requirement 拆成 Rule、具體 Example 與待確認 Question；未決的台灣麻將規則必須由人決定，不得由 Codex 猜測。
 - 每個重要 Example 都要能追到 OpenSpec scenario、Vitest test 或明確的 Browser／人工驗收點。
-- 規則邏輯放在 `src/mahjong/`，畫面與互動放在 `src/main.ts` 和 `src/styles.css`。
+- 規則邏輯放在 `src/mahjong/`，AI 在 `src/ai/`，UI 在 `src/ui/` 與 `src/styles.css`，整合者擁有 `src/main.ts`、`src/contracts/`、根目錄設定與依賴。Desktop owner 擁有 `desktop/`。各 worktree 不跨 owner 編輯。
 - 先寫會失敗的測試，再做最小實作；不得為了綠燈而刪除或放寬既有測試。
-- 不要順便加入胡牌判斷、計分、連線對戰、登入或資料庫。
+- 已授權加入一般五面子一將胡牌與摸打；不加入吃碰槓、計分、連線對戰、登入或資料庫。桌規已確認：玩家東家對三 AI、可自摸及胡棄牌、最近下家優先、不設過水、不留尾牌、補花耗盡亦流局。macOS 本機未簽章 Electron 交付。
 - 完成後必須執行 `npm test` 與 `npm run build`，再做 Browser Preview 與 Git diff review。
 
 ## Safety
