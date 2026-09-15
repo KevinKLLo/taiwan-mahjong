@@ -22,18 +22,22 @@
           <p class="eyebrow">Codex AI-Assisted Engineering</p>
           <h1>台灣麻將規則實驗室</h1>
           <p class="lede">
-            目前只支援 16 張花牌規則。今天要用 OpenSpec 與 TDD，讓 Codex
-            加入「無花牌規則」，並留下可以 review 的工程證據。
+            選擇有花牌或無花牌規則，探索台灣十六張麻將的起手牌局。
+            使用相同規則與 Seed，即可重現相同結果。
           </p>
         </div>
 
         <form id="round-form" class="round-controls">
+          <label class="rule-toggle" for="use-flowers">
+            <input id="use-flowers" type="checkbox" role="switch" checked />
+            <span>使用花牌</span>
+          </label>
           <label for="seed">牌局 Seed</label>
           <div class="control-row">
             <input id="seed" name="seed" type="number" value="20260915" min="1" />
             <button type="submit">開始新牌局</button>
           </div>
-          <p class="control-help">相同 Seed 會產生相同牌局，方便測試與重現問題。</p>
+          <p class="control-help">切換規則會立即重新開局。相同規則與 Seed 會產生相同牌局。</p>
         </form>
       </section>
 

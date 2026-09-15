@@ -12,6 +12,8 @@ function requireElement<T extends Element>(selector: string): T {
 
 const form = requireElement<HTMLFormElement>("#round-form");
 const seedInput = requireElement<HTMLInputElement>("#seed");
+const flowerSwitch = requireElement<HTMLInputElement>("#use-flowers");
+let currentRound = dealInitialHands(20260915);
 const table = requireElement<HTMLElement>("#table");
 const message = requireElement<HTMLElement>("#message");
 const ruleMode = requireElement<HTMLElement>("#rule-mode");
@@ -19,14 +21,14 @@ const wallRemaining = requireElement<HTMLElement>("#wall-remaining");
 const roundSeed = requireElement<HTMLElement>("#round-seed");
 const validationState = requireElement<HTMLElement>("#validation-state");
 
-function renderTiles(codes: readonly TileCode[], flower = false): HTMLElement {
+function renderTiles(codes: readonly TileCode[], flower = false, noFlowers = false): HTMLElement {
   const container = document.createElement("div");
   container.className = "tiles";
 
   if (codes.length === 0) {
     const empty = document.createElement("span");
     empty.className = "empty-state";
-    empty.textContent = flower ? "本局起手沒有花牌" : "沒有牌";
+    empty.textContent = noFlowers ? "無花牌模式，不使用花牌" : flower ? "本局起手沒有花牌" : "沒有牌";
     container.appendChild(empty);
     return container;
   }
@@ -44,7 +46,9 @@ function renderTiles(codes: readonly TileCode[], flower = false): HTMLElement {
 
 function renderRound(round: RoundState): void {
   const problems = validateRound(round);
-  ruleMode.textContent = "花牌規則";
+  currentRound = round;
+  flowerSwitch.checked = round.ruleMode === "flowers";
+  ruleMode.textContent = round.ruleMode === "flowers" ? "有花牌規則" : "無花牌規則";
   wallRemaining.textContent = String(round.wallRemaining);
   roundSeed.textContent = String(round.seed);
   validationState.textContent = problems.length === 0 ? "通過" : "需檢查";
@@ -66,21 +70,27 @@ function renderRound(round: RoundState): void {
     const flowerHeading = document.createElement("h3");
     flowerHeading.textContent = `花牌區 ${player.flowers.length} 張`;
     panel.appendChild(flowerHeading);
-    panel.appendChild(renderTiles(player.flowers, true));
+    panel.appendChild(renderTiles(player.flowers, true, round.ruleMode === "no-flowers"));
     table.appendChild(panel);
   }
 }
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+function startRound(): void {
   const seed = Number.parseInt(seedInput.value, 10);
   if (!Number.isFinite(seed) || seed < 1) {
     message.textContent = "Seed 必須是大於 0 的整數。";
     message.classList.add("message-error");
+    flowerSwitch.checked = currentRound.ruleMode === "flowers";
     return;
   }
 
-  renderRound(dealInitialHands(seed));
-});
+  renderRound(dealInitialHands(seed, flowerSwitch.checked ? "flowers" : "no-flowers"));
+}
 
-renderRound(dealInitialHands(20260915));
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  startRound();
+});
+flowerSwitch.addEventListener("change", startRound);
+
+renderRound(currentRound);

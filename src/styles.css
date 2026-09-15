@@ -139,6 +139,41 @@ button:hover {
   line-height: 1.55;
 }
 
+.round-controls .rule-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.rule-toggle input {
+  appearance: none;
+  flex: 0 0 48px;
+  width: 48px;
+  min-height: 28px;
+  height: 28px;
+  padding: 3px;
+  margin: 0;
+  border-radius: 20px;
+  background: #727872;
+  cursor: pointer;
+}
+
+.rule-toggle input::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+}
+
+.rule-toggle input:checked { background: #157343; }
+.rule-toggle input:checked::before { transform: translateX(20px); }
+input:focus-visible, button:focus-visible { outline: 3px solid #2167c7; outline-offset: 3px; }
+.control-row input { min-width: 0; }
+
 .status-band {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
