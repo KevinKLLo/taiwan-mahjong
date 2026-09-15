@@ -1,6 +1,6 @@
 ## 1. 共同基底
 
-- [ ] 1.1 固定確認桌規、contracts、fixtures 與 ownership，通過型別檢查後建立三個 worktree。
+- [x] 1.1 固定確認桌規、contracts、fixtures 與 ownership，通過型別檢查後建立三個 worktree。
 
 ## 2. 平行實作
 

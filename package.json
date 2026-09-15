@@ -2,6 +2,7 @@
   "name": "codex-mahjong-workshop-starter",
   "version": "1.0.0",
   "private": true,
+  "description": "Offline single-round Taiwanese mahjong desktop game",
   "type": "module",
   "engines": {
     "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
@@ -15,6 +16,8 @@
     "check": "npm test && npm run build",
     "preflight": "node scripts/preflight.mjs",
     "openspec": "openspec"
+    ,"desktop": "npm run build && electron desktop/main.cjs"
+    ,"desktop:package": "npm run build && node desktop/package.mjs"
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",
