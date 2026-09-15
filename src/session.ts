@@ -43,7 +43,7 @@ export function createSession<State>(
   return {
     newGame(config:Omit<GameConfig,'gameId'>) {
       if(destroyed) return;
-      if(!Number.isSafeInteger(config.seed) || config.seed<1) {showError('Seed 必須是大於 0 的安全整數。');return;}
+      if(!Number.isInteger(config.seed) || config.seed<1 || config.seed>0xffffffff) {showError('Seed 必須是 1 到 4294967295 的整數。');return;}
       cancel();
       generation++;
       state=engine.createGame({...config,gameId:`game-${generation}`});
