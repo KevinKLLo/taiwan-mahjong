@@ -3,83 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Codex AI-Assisted Engineering 工作坊台灣麻將練習專案"
-    />
+    <meta name="description" content="一桌麻將：離線台灣十六張麻將單局練習。" />
     <link rel="icon" href="data:," />
-    <title>台灣麻將規則實驗室</title>
+    <title>一桌麻將</title>
   </head>
   <body>
-    <header class="topbar">
-      <a class="brand" href="#main">MAHJONG LAB</a>
-      <span class="release-channel">Workshop Starter</span>
-    </header>
-
-    <main id="main" class="shell">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Codex AI-Assisted Engineering</p>
-          <h1>台灣麻將規則實驗室</h1>
-          <p class="lede">
-            選擇有花牌或無花牌規則，探索台灣十六張麻將的起手牌局。
-            使用相同規則與 Seed，即可重現相同結果。
-          </p>
-        </div>
-
-        <form id="round-form" class="round-controls">
-          <label class="rule-toggle" for="use-flowers">
-            <input id="use-flowers" type="checkbox" role="switch" checked />
-            <span>使用花牌</span>
-          </label>
-          <label for="seed">牌局 Seed</label>
-          <div class="control-row">
-            <input id="seed" name="seed" type="number" value="20260915" min="1" />
-            <button type="submit">開始新牌局</button>
-          </div>
-          <p class="control-help">切換規則會立即重新開局。相同規則與 Seed 會產生相同牌局。</p>
-        </form>
-      </section>
-
-      <section class="status-band" aria-label="牌局狀態">
-        <div>
-          <span>目前規則</span>
-          <strong id="rule-mode">花牌規則</strong>
-        </div>
-        <div>
-          <span>牌牆剩餘</span>
-          <strong id="wall-remaining">-</strong>
-        </div>
-        <div>
-          <span>本局 Seed</span>
-          <strong id="round-seed">-</strong>
-        </div>
-        <div>
-          <span>驗證狀態</span>
-          <strong id="validation-state">尚未開局</strong>
-        </div>
-      </section>
-
-      <section id="message" class="message" role="status">
-        請先開始一局，確認 Starter baseline 可以正常執行。
-      </section>
-
-      <section id="table" class="table" aria-label="四家起手牌"></section>
-
-      <section class="workshop-task">
-        <div>
-          <p class="eyebrow">課堂 Change</p>
-          <h2>加入「有花牌／無花牌」規則切換</h2>
-        </div>
-        <ol>
-          <li>先用 OpenSpec 產生 proposal、spec、design 與 tasks。</li>
-          <li>先寫無花牌規則的失敗測試，再做最小實作。</li>
-          <li>用 Browser Preview 驗證切換控制與牌局資訊。</li>
-          <li>檢查 Git diff，確認沒有順手加入計分或胡牌判斷。</li>
-        </ol>
-      </section>
-    </main>
-
+    <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
