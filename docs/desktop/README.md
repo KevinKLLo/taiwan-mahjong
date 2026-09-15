@@ -8,6 +8,7 @@
 
 ```sh
 npm ci
+npm exec --no -- install-electron
 npm run preflight
 npm test
 npm run desktop
@@ -40,6 +41,6 @@ npm run desktop:package
 | 無 server 也能開局、終局、再開局 | desktop-runtime／打包後遊玩 | npm run build；打包 | 停止 dev server，啟動 app 完成一局 |
 | 視窗縮放、最小化、還原、退出 | desktop-runtime／打包後遊玩 | minWidth/minHeight 設定測試 | 800 × 600 操作，最小化還原狀態不變，退出後程序消失 |
 
-Desktop 分支 Red 證據：新增測試因缺少 policy.cjs 失敗；Green：15 tests 通過，build 通過。實際 `.app` 啟動、遊玩與生命週期驗收由整合者在最終 UI/Core 合併後記錄，不以政策單元測試代替人工結果。
+Desktop 分支 Red 證據：新增測試因缺少 policy.cjs 失敗；Green：15 tests 通過，build 通過。2026-09-15 使用 Node.js 24.10.0、Electron 44.3.0、Packager 20.3.0 成功建立 darwin-arm64 `.app`。Electron 44 需明確執行 `install-electron` 下載開發啟動所需的 runtime；Packager 會自行取得打包 runtime。實際 `.app` 啟動、遊玩與生命週期驗收由整合者在最終 UI/Core 合併後記錄，不以政策單元測試代替人工結果。
 
 官方依據：[Electron security](https://www.electronjs.org/docs/latest/tutorial/security)、[protocol API](https://www.electronjs.org/docs/latest/api/protocol)、[Electron Packager](https://github.com/electron/packager)。
