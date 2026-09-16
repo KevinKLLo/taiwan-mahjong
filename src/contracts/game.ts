@@ -5,9 +5,14 @@ export type PlayerId = 'east' | 'south' | 'west' | 'north';
 export const PLAYER_IDS: readonly PlayerId[] = ['east', 'south', 'west', 'north'];
 export interface Tile { id: string; code: TileCode }
 export interface GameConfig { seed: number; ruleMode: RuleMode; gameId: string }
-export type Phase = 'awaiting-discard' | 'awaiting-win-response' | 'finished';
+export type Phase = 'awaiting-discard' | 'awaiting-win-response' | 'awaiting-meld-response' | 'finished';
+export interface Meld { type: 'chi' | 'pon' | 'open-kan' | 'closed-kan' | 'added-kan'; tiles: Tile[]; from?: PlayerId }
+export interface VisibleMeld extends Omit<Meld, 'tiles'> { tiles: Tile[] | null }
 export type GameAction =
   | { type: 'discard'; playerId: PlayerId; tileId: string }
+  | { type: 'chi'; playerId: PlayerId; tileIds: string[] }
+  | { type: 'pon' | 'open-kan'; playerId: PlayerId }
+  | { type: 'closed-kan' | 'added-kan'; playerId: PlayerId; tileId: string }
   | { type: 'win'; playerId: PlayerId }
   | { type: 'pass'; playerId: PlayerId };
 export interface ActionEnvelope { gameId: string; revision: number; action: GameAction }
@@ -25,6 +30,7 @@ export interface VisiblePlayer {
   hand: Tile[] | null;
   flowers: Tile[];
   discards: Tile[];
+  melds: VisibleMeld[];
 }
 export interface PlayerView {
   gameId: string;
@@ -39,6 +45,7 @@ export interface PlayerView {
   players: VisiblePlayer[];
   wallRemaining: number;
   lastDiscard: { playerId: PlayerId; tile: Tile } | null;
+  pendingKan?: { playerId: PlayerId; tile: Tile } | null;
   drawnTileId: string | null;
   legalActions: GameAction[];
   outcome: GameOutcome | null;

@@ -17,7 +17,12 @@ function act(state: GameState, action: GameAction): GameState {
   return result.state;
 }
 function allTiles(state: GameState) {
-  return [...state.wall, ...state.players.flatMap(p => [...p.hand, ...p.flowers, ...p.discards])];
+  return [...state.wall, ...state.players.flatMap(p => [...p.hand, ...p.flowers, ...p.discards, ...p.melds.flatMap(m=>m.tiles)])];
+}
+// These legacy draw-only scenarios explicitly decline newly supported melds.
+function passMelds(state:GameState):GameState {
+  while(state.phase==='awaiting-meld-response') state=act(state,{type:'pass',playerId:getPlayerView(state,'east').actingPlayer!});
+  return state;
 }
 function responseFixture(): GameState {
   return gameWithHands({
@@ -58,7 +63,7 @@ describe('single-round-game: 無花開局與出牌 / 非法或過期動作', () 
   it('moves a discard to its river and draws from the front for the next seat', () => {
     const state = createGame(config);
     const before = structuredClone(state);
-    const next = act(state, { type: 'discard', playerId: 'east', tileId: state.players[0].hand[0].id });
+    const next = passMelds(act(state, { type: 'discard', playerId: 'east', tileId: state.players[0].hand[0].id }));
     expect(state).toEqual(before);
     expect(next.wall.length).toBe(70);
     expect(next.currentPlayer).toBe('south');
@@ -122,8 +127,8 @@ describe('single-round-game: 多人可胡 / 終局', () => {
     state = act(state,{type:'pass',playerId:'south'});
     state = act(state,{type:'pass',playerId:'west'});
     // South and west discard their new draws, preserving their waiting hands.
-    state=act(state,{type:'discard',playerId:'south',tileId:state.drawnTileId!});
-    state=act(state,{type:'discard',playerId:'west',tileId:state.drawnTileId!});
+    state=passMelds(act(state,{type:'discard',playerId:'south',tileId:state.drawnTileId!}));
+    state=passMelds(act(state,{type:'discard',playerId:'west',tileId:state.drawnTileId!}));
     state = act(state,discardDR(state,'north'));
     expect(getLegalActions(state,'south').map(a=>a.type)).toEqual(['win','pass']);
     expect(act(state,{type:'win',playerId:'south'}).outcome).toMatchObject({kind:'discard-win',winner:'south',from:'north'});
@@ -181,7 +186,7 @@ describe('single-round-game: AI 與資訊隔離 / 完整模擬', () => {
         expect(chooseAction(view,view.legalActions)).toEqual(action);
         state=act(state,action); replay=act(replay,action);
         expect(allTiles(state).map(t=>t.id).sort()).toEqual(ids);
-        if(state.phase==='awaiting-discard') expect(state.players.map(p=>p.hand.length)).toEqual(PLAYER_IDS.map(p=>p===state.currentPlayer?17:16));
+        if(state.phase==='awaiting-discard') expect(state.players.map(p=>p.hand.length+3*p.melds.length)).toEqual(PLAYER_IDS.map(p=>p===state.currentPlayer?17:16));
       }
       expect(state.phase).toBe('finished');
       expect(replay).toEqual(state);

@@ -1,8 +1,8 @@
 import { NORMAL_TILE_CODES, type TileCode } from './tiles';
 
-/** Only the closed 17-tile five-meld-and-pair shape is supported by this MVP. */
-export function isWinningHand(tiles: readonly TileCode[]): boolean {
-  if (tiles.length !== 17) return false;
+/** Each declared meld occupies one of the five meld slots, including a four-tile kan. */
+export function isWinningHand(tiles: readonly TileCode[], declaredMelds = 0): boolean {
+  if (!Number.isInteger(declaredMelds) || declaredMelds < 0 || declaredMelds > 5 || tiles.length !== 17 - 3 * declaredMelds) return false;
   const counts = Array<number>(34).fill(0);
   for (const tile of tiles) {
     const index = NORMAL_TILE_CODES.indexOf(tile);

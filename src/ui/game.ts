@@ -1,4 +1,4 @@
-import type { GameAction, GameUI, PlayerId, PlayerView, Tile, UIHandlers } from '../contracts/game';
+import type { GameAction, GameUI, PlayerId, PlayerView, Tile, UIHandlers, VisibleMeld } from '../contracts/game';
 import { tileLabel, NORMAL_TILE_CODES } from '../mahjong/tiles';
 
 const SEATS: Record<PlayerId, string> = { east: '東家', south: '南家', west: '西家', north: '北家' };
@@ -10,6 +10,10 @@ function tileFace(tile: Tile): string {
 }
 function exposed(tiles: Tile[], empty: string): string {
   return tiles.length ? tiles.map(tile => `<span class="tile tile-small" title="${escape(tileLabel(tile.code))}" aria-label="${escape(tileLabel(tile.code))}">${tileFace(tile)}</span>`).join('') : `<span class="empty">${empty}</span>`;
+}
+const MELD_NAMES = {chi:'吃',pon:'碰','open-kan':'明槓','closed-kan':'暗槓','added-kan':'加槓'};
+function melds(groups: VisibleMeld[], seat:PlayerId):string {
+  return `<div class="meld-zone" aria-label="${SEATS[seat]}副露">${groups.map(m=>`<div class="meld-group"><span class="zone-label">${MELD_NAMES[m.type]}${m.from?` · ${SEATS[m.from]}`:''}</span><div>${m.tiles?exposed(m.tiles,''):Array.from({length:4},()=>'<span class="tile-back" aria-hidden="true"></span>').join('')}</div></div>`).join('')}</div>`;
 }
 
 export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
@@ -43,12 +47,14 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
           <div class="seat-heading"><span class="seat-avatar">${SEATS[player.id][0]}</span><div><h2>${SEATS[player.id]} <span>電腦</span></h2><p>${player.handCount} 張手牌${view!.actingPlayer === player.id ? ' · 行動中' : ''}</p></div></div>
           <div class="opponent-hand" aria-label="${player.hand === null ? '暗牌' : '終局手牌'}">${player.hand === null ? Array.from({length: player.handCount}, () => '<span class="tile-back" aria-hidden="true"></span>').join('') : exposed(player.hand, '無手牌')}</div>
           <div class="flower-line"><span class="zone-label">花</span>${exposed(player.flowers, '—')}</div>
+          ${melds(player.melds,player.id)}
           <div class="river" aria-label="${SEATS[player.id]}牌河">${exposed(player.discards, '尚未出牌')}</div>
         </section>`).join('')}
         <section class="table-center" aria-label="目前牌局狀態"><div class="compass" aria-hidden="true">東</div><div class="wall-count"><strong>${view.wallRemaining}</strong><span>牌牆剩餘</span></div>${view.lastDiscard ? `<div class="last-discard"><span>${SEATS[view.lastDiscard.playerId]}打出</span><span class="tile">${tileFace(view.lastDiscard.tile)}</span></div>` : '<p class="center-note">一局一會<br>慢慢打，好好玩。</p>'}</section>
         <section class="own-river"><span class="zone-label">你的牌河</span><div class="river" aria-label="東家牌河">${exposed(own.discards, '選一張手牌，開始這一局')}</div><div class="flower-line"><span class="zone-label">你的花牌</span>${exposed(own.flowers, '—')}</div></section>
       </section>
       <section class="player-dock" aria-label="你的手牌與操作"><div class="dock-heading"><div class="seat-heading"><span class="seat-avatar own-avatar">東</span><div><h2>你 <span class="dealer">莊家</span></h2><p>${own.handCount} 張手牌</p></div></div><p class="turn-status" role="status">${escape(view.phase === 'finished' ? '本局結束' : submitted === revisionKey() ? '處理中…' : view.message)}</p></div>
+        ${melds(own.melds,own.id)}
         <div class="hand" aria-label="你的手牌">${orderedHand.map(tile => {
           const allowed = actions.some(action => action.type === 'discard' && action.tileId === tile.id);
           return `<button class="tile hand-tile ${selected === tile.id ? 'selected' : ''} ${view!.drawnTileId === tile.id ? 'drawn' : ''}" data-tile-id="${escape(tile.id)}" aria-label="${escape(tileLabel(tile.code))}${view!.drawnTileId === tile.id ? '，新摸牌' : ''}" aria-pressed="${selected === tile.id}" ${allowed ? '' : 'disabled'}>${tileFace(tile)}${view!.drawnTileId === tile.id ? '<span class="drawn-label">新摸</span>' : ''}</button>`;
@@ -58,6 +64,17 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
       ${view.outcome ? `<section class="result" aria-label="本局結果"><span class="eyebrow">ROUND COMPLETE</span><h2>${view.outcome.kind === 'draw' ? '流局' : `${SEATS[view.outcome.winner!]}${view.outcome.kind === 'self-draw' ? '自摸' : '胡牌'}`}</h2><p>${escape(view.outcome.reason)}</p>${view.outcome.from ? `<p>${SEATS[view.outcome.from]}放槍</p>` : ''}</section>` : ''}
       <p class="game-error" role="alert">${escape(error)}</p><footer class="app-footer"><span>一人一桌，隨時開局。</span><span>有花／無花 · 離線遊玩</span></footer></main>
       <div class="modal-host"></div></div>`;
+    if(canPass) root.querySelector('.action-hint')!.textContent=canWin?'可胡牌，也可選擇過。':'選擇吃碰槓組合，或選擇過。';
+    const extra=actions.map((action,index)=>{
+      if(!(action.type in MELD_NAMES)) return '';
+      const tiles=action.type==='chi'?(own.hand??[]).filter(t=>action.tileIds.includes(t.id)):'tileId' in action?(own.hand??[]).filter(t=>t.id===action.tileId):[];
+      const label=MELD_NAMES[action.type as keyof typeof MELD_NAMES];
+      return `<button class="secondary" data-meld-action="${index}">${label}${tiles.length?` · ${tiles.map(t=>escape(tileLabel(t.code))).join('＋')}`:''}</button>`;
+    }).join('');
+    const actionHost=root.querySelector('.action-buttons')!;
+    actionHost.innerHTML=extra+actionHost.innerHTML;
+    if(view.pendingKan) root.querySelector('.table-center')!.insertAdjacentHTML('beforeend',`<p class="rob-kan">${SEATS[view.pendingKan.playerId]}加槓 ${escape(tileLabel(view.pendingKan.tile.code))} · 等待搶槓回應</p>`);
+    root.querySelector('.table-note')!.textContent='吃碰槓胡 · 不計台';
     drawDialog();
   }
   function drawDialog(): void {
@@ -80,7 +97,7 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
     drawDialog();
   }
   function submit(action: GameAction): void {
-    if (!view || !available().some(candidate => candidate.type === action.type && (candidate.type !== 'discard' || action.type === 'discard' && candidate.tileId === action.tileId))) return;
+    if (!view || !available().some(candidate => JSON.stringify(candidate) === JSON.stringify(action))) return;
     const envelope = {gameId: view.gameId, revision: view.revision, action};
     submitted = revisionKey();
     draw();
@@ -110,6 +127,11 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
       return;
     }
     const type = target.dataset.action;
+    if(target.dataset.meldAction!==undefined) {
+      const action=available()[Number(target.dataset.meldAction)];
+      if(action) submit(action);
+      return;
+    }
     if (type === 'discard' && selected) submit({type, playerId: view.viewer, tileId: selected});
     else if (type === 'win' || type === 'pass') submit({type, playerId: view.viewer});
   }

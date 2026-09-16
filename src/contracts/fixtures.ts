@@ -12,7 +12,7 @@ export function makeFixture(kind: 'discard' | 'waiting' | 'response' | 'self-dra
     currentPlayer: response ? 'north' : actingPlayer ?? 'east', actingPlayer,
     players: PLAYER_IDS.map((id, i) => ({ id, name: ['你 · 東家','南家','西家','北家'][i], handCount: i === 0 && !response && kind !== 'waiting' && !finished ? 17 : 16,
       hand: i === 0 ? hand.slice(0, response || kind === 'waiting' || finished ? 16 : 17)
-        : finished ? hand.slice(0,16).map(tile=>({...tile,id:`${id}-${tile.id}`})) : null, flowers: [], discards: [] })),
+        : finished ? hand.slice(0,16).map(tile=>({...tile,id:`${id}-${tile.id}`})) : null, flowers: [], discards: [], melds: [] })),
     wallRemaining: finished ? 0 : 71,
     lastDiscard: response ? { playerId: 'north', tile: {id:'discard',code:'DR'} } : null,
     drawnTileId: response || kind === 'waiting' || finished ? null : 'fixture-16',

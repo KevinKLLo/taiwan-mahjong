@@ -4,6 +4,10 @@ import type { GameAction, PlayerView } from '../contracts/game';
 export function chooseAction(view:PlayerView,legalActions:GameAction[]):GameAction {
   const win=legalActions.find(a=>a.type==='win');
   if(win) return win;
+  for(const type of ['open-kan','closed-kan','added-kan','pon','chi']) {
+    const meld=legalActions.find(a=>a.type===type);
+    if(meld) return meld;
+  }
   const hand=view.players.find(p=>p.id===view.viewer)?.hand??[];
   const value=(tileId:string):number => {
     const tile=hand.find(t=>t.id===tileId);

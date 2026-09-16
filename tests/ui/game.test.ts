@@ -10,7 +10,7 @@ function fixture(): PlayerView {
     players: ['east', 'south', 'west', 'north'].map((id) => ({
       id: id as 'east', name: id, handCount: 16,
       hand: id === 'east' ? [{ id: 'one', code: 'B1' }, { id: 'two', code: 'B1' }] : null,
-      flowers: [], discards: [],
+      flowers: [], discards: [], melds: [],
     })),
     drawnTileId: 'two', lastDiscard: null, outcome: null, message: '請出牌',
     legalActions: [{type: 'discard', playerId: 'east', tileId: 'one'}, {type: 'discard', playerId: 'east', tileId: 'two'}],
@@ -19,6 +19,32 @@ function fixture(): PlayerView {
 describe('可見牌桌與操作', () => {
   let root: HTMLElement;
   beforeEach(() => { document.body.innerHTML = '<main id="app"></main>'; root = document.querySelector('#app')!; });
+  it('吃牌各組合獨立送出 IDs，副露含來源，重複點擊不重送', () => {
+    const onAction=vi.fn(), ui=mountGame(root,{onAction,onNewGame:vi.fn()});
+    const view=fixture();
+    view.phase='awaiting-meld-response';
+    view.players[0].hand=[{id:'a',code:'C1'},{id:'b',code:'C2'},{id:'c',code:'C4'}];
+    view.players[1].melds=[{type:'pon',from:'west',tiles:[{id:'p1',code:'DR'},{id:'p2',code:'DR'},{id:'p3',code:'DR'}]}];
+    view.lastDiscard={playerId:'north',tile:{id:'d',code:'C3'}};
+    view.legalActions=[{type:'chi',playerId:'east',tileIds:['a','b']},{type:'chi',playerId:'east',tileIds:['b','c']},{type:'pass',playerId:'east'}];
+    ui.render(view);
+    const buttons=root.querySelectorAll<HTMLButtonElement>('[data-meld-action]');
+    expect(buttons).toHaveLength(2);
+    expect(buttons[1].textContent).toContain('二萬'); expect(buttons[1].textContent).toContain('四萬');
+    expect(root.querySelector('[aria-label="南家副露"]')?.textContent).toContain('西家');
+    buttons[1].click(); buttons[1].click();
+    expect(onAction).toHaveBeenCalledExactlyOnceWith({gameId:'test',revision:4,action:view.legalActions[1]});
+  });
+  it('顯示三種槓按鈕；搶槓畫面提示第四張；暗槓不顯牌面',()=>{
+    const ui=mountGame(root,{onAction:vi.fn(),onNewGame:vi.fn()}),view=fixture();
+    view.legalActions=[{type:'closed-kan',playerId:'east',tileId:'one'},{type:'added-kan',playerId:'east',tileId:'two'},{type:'open-kan',playerId:'east'}];
+    view.pendingKan={playerId:'south',tile:{id:'kan',code:'C3'}};
+    view.players[1].melds=[{type:'closed-kan',tiles:null}];
+    ui.render(view);
+    expect(root.textContent).toContain('暗槓'); expect(root.textContent).toContain('加槓'); expect(root.textContent).toContain('明槓');
+    expect(root.querySelector('[aria-label="南家副露"]')?.querySelectorAll('.tile-back')).toHaveLength(4);
+    expect(root.textContent).toContain('搶槓');
+  });
   it('選牌出牌：同牌唯一 ID、revision，未更新前只提交一次', () => {
     const onAction = vi.fn(); const ui = mountGame(root, { onAction, onNewGame: vi.fn() });
     ui.render(fixture());

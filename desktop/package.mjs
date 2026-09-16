@@ -15,5 +15,5 @@ await mkdir(path.join(stage, 'desktop'));
 await cp(path.join(root, 'dist'), path.join(stage, 'dist'), { recursive: true });
 for (const name of ['main.cjs', 'policy.cjs']) await cp(path.join(root, 'desktop', name), path.join(stage, 'desktop', name));
 await writeFile(path.join(stage, 'package.json'), JSON.stringify({ name: metadata.name, version: metadata.version, productName: 'Taiwan Mahjong', main: 'desktop/main.cjs' }, null, 2));
-const outputs = await packager({ dir: stage, out: path.join(root, 'release'), name: 'Taiwan Mahjong', executableName: 'Taiwan Mahjong', appBundleId: 'local.mahjong.desktop', platform: 'darwin', arch: process.arch, electronVersion, asar: true, prune: false, overwrite: false, osxSign: false, osxNotarize: false });
+const outputs = await packager({ dir: stage, out: path.resolve(root, process.env.MAHJONG_RELEASE_DIR || 'release'), name: 'Taiwan Mahjong', executableName: 'Taiwan Mahjong', appBundleId: 'local.mahjong.desktop', platform: 'darwin', arch: process.arch, electronVersion, asar: true, prune: false, overwrite: false, osxSign: false, osxNotarize: false });
 console.log(`Unsigned local macOS build (${process.arch}):\n${outputs.join('\n')}\nStaging directory: ${stage}`);
