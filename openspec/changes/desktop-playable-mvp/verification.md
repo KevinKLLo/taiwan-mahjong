@@ -45,4 +45,10 @@ Electron 44.3.0、Packager 20.3.0、macOS arm64，本機未簽章產物：`relea
 
 尚欠實際原生視窗的啟動、離線遊玩、縮放／最小化／還原、退出驗收。2026-09-15 呼叫 CUA 啟動產物被電腦操作權限擋下；已通知使用者開啟權限，未透過其他 UI 自動化方式繞過。
 
-目前不宣稱桌面驗收完成，未 archive、未 Sync Specs。完成此最後驗收後再依授權合併 main。
+以上為首次驗收時的歷史狀態，後續進度以下節為準。
+
+## 2026-09-16 合併前更新
+
+後續原生 App 已成功啟動並讀取 app://mahjong 畫面；新版吃碰槓產物另打包至 `release/meld-actions/Taiwan Mahjong-darwin-arm64/Taiwan Mahjong.app`。使用者測試新版後確認「操作 ok」，55 項測試與 build 通過，詳細證據見 `../add-meld-actions/verification.md`。
+
+使用者已在知悉尚未逐項驗證離線、最小化／還原及退出的情況下，明確授權合併整個桌面 MVP 與吃碰槓至 main。這是接受已揭露剩餘驗收風險的合併決定，不表示未做的原生驗收已通過。舊 task 3.2 保持未勾選，直到其全部驗收條件有證據；不自動 Sync Specs 或 Archive。
