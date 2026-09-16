@@ -1,5 +1,33 @@
 # Codex AI-Assisted Engineering Workshop Starter
 
+## 桌面單局 MVP
+
+目前整合分支已提供一人對三個 AI 的台灣十六張麻將：有花／無花、吃碰槓、一般胡牌與流局。玩家固定東家／莊家，不提供計台、連莊或存檔。多人可胡時最近下家優先，不設過水、不保留尾牌。
+
+吃僅限上家；碰可取其他三家；明槓不可取上家棄牌。胡優先於碰／明槓，再優先於吃。吃牌有多組合時按鈕標示要用的兩張手牌。吃碰後直接出牌，槓後尾端補牌（可自摸），加槓可搶胡、暗槓不可；對手暗槓以牌背顯示。新功能驗收紀錄見 `openspec/changes/add-meld-actions/verification.md`，既有 release 產物不會隨原始碼更新。
+
+```bash
+npm ci
+npm run preflight
+npm test
+npm run build
+npm run dev
+```
+
+macOS 本機桌面啟動與打包：
+
+```bash
+npm exec --no -- install-electron
+npm run desktop
+npm run desktop:package
+```
+
+打包產物位於 `release/Taiwan Mahjong-darwin-arm64/Taiwan Mahjong.app`（Intel 電腦使用 x64）。此為本機未簽章產物，不代表已公證或可公開發布。封裝詳情見 `docs/desktop/README.md`。
+
+操作：點選自己的牌後按「確認出牌」；有合法胡牌時顯示「胡牌／過」或「自摸」。牌局設定可選規則與進階 seed，進行中重開會要求確認。完整驗收狀態見 `openspec/changes/desktop-playable-mvp/verification.md`。
+
+以下保留工作坊 starter 的背景與原始課程說明。
+
 這是數字科技四小時工程師工作坊的學員 Starter。專案使用 TypeScript、Vite 與 Vitest，呈現一個可重現牌局的台灣麻將 HTML5 小工具。
 
 Starter 只實作花牌玩法。課堂會用 OpenSpec／SDD 固定意圖與邊界、用 BDD 具體例子對齊行為、用 TDD 建立可重跑證據，再由 Codex 協助加入無花牌玩法，最後以 Git diff、Browser Preview、CI 與部署流程驗證。本課不另外安裝 Cucumber；OpenSpec scenario 與 Vitest 承接 BDD 的 Formulation 與 Automation。
