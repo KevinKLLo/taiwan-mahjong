@@ -12,4 +12,4 @@
 
 - [x] 3.1 整合 Core／UI／Desktop，AI 排程與 stale action 測試通過。
 - [ ] 3.2 npm ci、preflight、test、build、desktop package 通過，Browser 與實際桌面完成一局及重開驗收。
-- [ ] 3.3 完成 diff review、驗收紀錄、提交整合結果並合併回 main，確認工作目錄乾淨。
+- [x] 3.3 完成 diff review、驗收紀錄、提交整合結果並合併回 main，確認工作目錄乾淨。
