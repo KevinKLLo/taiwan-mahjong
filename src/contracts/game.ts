@@ -4,7 +4,13 @@ import type { RuleMode } from '../mahjong/rules';
 export type PlayerId = 'east' | 'south' | 'west' | 'north';
 export const PLAYER_IDS: readonly PlayerId[] = ['east', 'south', 'west', 'north'];
 export interface Tile { id: string; code: TileCode }
-export interface GameConfig { seed: number; ruleMode: RuleMode; gameId: string }
+export interface GameConfig {
+  seed: number; ruleMode: RuleMode; gameId: string;
+  viewer?: PlayerId;
+  /** Even tile offset in the shuffled clockwise wall; omitted for legacy replays. */
+  wallStart?: number;
+  openingSummary?: string;
+}
 export type Phase = 'awaiting-discard' | 'awaiting-win-response' | 'awaiting-meld-response' | 'finished';
 export interface Meld { type: 'chi' | 'pon' | 'open-kan' | 'closed-kan' | 'added-kan'; tiles: Tile[]; from?: PlayerId }
 export interface VisibleMeld extends Omit<Meld, 'tiles'> { tiles: Tile[] | null }
@@ -33,6 +39,7 @@ export interface VisiblePlayer {
   melds: VisibleMeld[];
 }
 export interface PlayerView {
+  openingSummary?: string;
   gameId: string;
   revision: number;
   seed: number;

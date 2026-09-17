@@ -23,6 +23,22 @@ function setup() {
 }
 
 describe('牌局協調器',()=>{
+  it('非東家 viewer 讓 AI 莊家先出牌，pause 撤銷排程與操作',()=>{
+    vi.useFakeTimers();
+    const {session,render,apply,error}=setup();
+    session.newGame({seed:42,ruleMode:'no-flowers',viewer:'west'});
+    const view=render.mock.lastCall![0] as PlayerView;
+    expect(view.viewer).toBe('west');
+    expect(vi.getTimerCount()).toBe(1);
+    session.dispatch({gameId:view.gameId,revision:0,action:{type:'discard',playerId:'east',tileId:'fixture-0'}});
+    expect(error).toHaveBeenCalled();expect(apply).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(100);
+    expect(apply.mock.lastCall![1].action.playerId).toBe('east');
+    session.pause();expect(vi.getTimerCount()).toBe(0);
+    session.dispatch({gameId:view.gameId,revision:1,action:{type:'discard',playerId:'west',tileId:'fixture-0'}});
+    vi.advanceTimersByTime(1000);expect(apply).toHaveBeenCalledTimes(1);
+    session.destroy();
+  });
   afterEach(()=>vi.useRealTimers());
   it('初始 render 且只接受玩家自己的動作',()=>{
     const {session,render,error,apply}=setup();

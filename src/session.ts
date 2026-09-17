@@ -19,17 +19,19 @@ export function createSession<State>(
   let generation=0;
   let timer:ReturnType<typeof setTimeout> | undefined;
   let destroyed=false;
+  let paused=true;
+  let viewer:PlayerId='east';
   const cancel=()=>{ if(timer!==undefined) clearTimeout(timer); timer=undefined; };
   const publish=()=>{
     cancel();
-    const view=engine.getPlayerView(state,'east');
+    const view=engine.getPlayerView(state,viewer);
     render(view);
-    if(view.actingPlayer && view.actingPlayer!=='east' && view.phase!=='finished') {
+    if(view.actingPlayer && view.actingPlayer!==viewer && view.phase!=='finished') {
       const epoch=generation;
       const actor=view.actingPlayer;
       timer=setTimeout(()=>{
         timer=undefined;
-        if(destroyed || epoch!==generation) return;
+        if(destroyed || paused || epoch!==generation) return;
         const aiView=engine.getPlayerView(state,actor);
         const actions=engine.getLegalActions(state,actor);
         if(actions.length===0) { showError('電腦目前沒有合法動作，請重新開局。'); return; }
@@ -47,16 +49,19 @@ export function createSession<State>(
       cancel();
       generation++;
       state=engine.createGame({...config,gameId:`game-${generation}`});
+      viewer=config.viewer??'east';
+      paused=false;
       publish();
     },
     dispatch(envelope:ActionEnvelope) {
-      if(destroyed) return;
-      if(envelope.action.playerId!=='east') {showError('只能操作自己的手牌。');return;}
+      if(destroyed||paused) return;
+      if(envelope.action.playerId!==viewer) {showError('只能操作自己的手牌。');return;}
       const result=engine.applyAction(state,envelope);
       if(!result.ok) {showError(`無法執行此動作：${result.error}`);return;}
       state=result.state;
       publish();
     },
+    pause() {paused=true;generation++;cancel();},
     destroy() {destroyed=true;generation++;cancel();},
   };
 }

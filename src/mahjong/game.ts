@@ -16,7 +16,7 @@ export interface GameState extends GameConfig {
   lastDiscard: { playerId: PlayerId; tile: Tile } | null;
   drawnTileId: string | null; outcome: GameOutcome | null;
 }
-const names: Record<PlayerId,string>={east:'東家（你）',south:'南家 AI',west:'西家 AI',north:'北家 AI'};
+const names: Record<PlayerId,string>={east:'東家',south:'南家',west:'西家',north:'北家'};
 const playerFor=(s:GameState,id:PlayerId)=>s.players.find(p=>p.id===id)!;
 const nextPlayer=(id:PlayerId)=>PLAYER_IDS[(PLAYER_IDS.indexOf(id)+1)%4];
 const others=(id:PlayerId)=>[1,2,3].map(n=>PLAYER_IDS[(PLAYER_IDS.indexOf(id)+n)%4]);
@@ -38,11 +38,18 @@ export function createGame(config:GameConfig):GameState {
   if(!Number.isInteger(config.seed)||config.seed<0||config.seed>0xffffffff) throw Error('seed 必須為 0 至 4294967295 的整數');
   if(config.ruleMode!=='flowers'&&config.ruleMode!=='no-flowers') throw Error('不支援的規則模式');
   if(!config.gameId) throw Error('缺少 gameId');
+  if(config.viewer!==undefined&&!PLAYER_IDS.includes(config.viewer)) throw Error('玩家門風無效');
+  const wallSize=config.ruleMode==='flowers'?144:136;
+  if(config.wallStart!==undefined&&(!Number.isInteger(config.wallStart)||config.wallStart<0||config.wallStart>=wallSize||config.wallStart%2!==0)) throw Error('開門位置無效');
   const s:GameState={...config,revision:0,phase:'awaiting-discard',currentPlayer:'east',
-    players:PLAYER_IDS.map(id=>({id,name:names[id],hand:[],flowers:[],discards:[],melds:[]})),
+    players:PLAYER_IDS.map(id=>({id,name:`${names[id]}${id===(config.viewer??'east')?'（你）':' AI'}`,hand:[],flowers:[],discards:[],melds:[]})),
     wall:buildWall(config.seed,config.ruleMode).map((code,i)=>({code,id:`${config.gameId}:tile:${i}`})),
     responders:[],claimQueue:[],pendingKan:null,canSelfKan:true,lastDiscard:null,drawnTileId:null,outcome:null};
-  for(const p of s.players) for(let i=0;i<(p.id==='east'?17:16);i++) draw(s,p);
+  if(config.wallStart!==undefined) {
+    s.wall=[...s.wall.slice(config.wallStart),...s.wall.slice(0,config.wallStart)];
+    for(let round=0;round<4;round++) for(const p of s.players) for(let tile=0;tile<4;tile++) draw(s,p);
+    draw(s,s.players[0]);
+  } else for(const p of s.players) for(let i=0;i<(p.id==='east'?17:16);i++) draw(s,p);
   return s;
 }
 
@@ -154,7 +161,7 @@ export function applyAction(s:GameState,envelope:ActionEnvelope):{ok:true;state:
 
 export function getPlayerView(s:GameState,viewer:PlayerId):PlayerView {
   const actingPlayer=s.phase==='finished'?null:s.phase==='awaiting-win-response'?s.responders[0]:s.phase==='awaiting-meld-response'?s.claimQueue[0][0].playerId:s.currentPlayer;
-  return structuredClone({gameId:s.gameId,revision:s.revision,seed:s.seed,ruleMode:s.ruleMode,viewer,
+  return structuredClone({gameId:s.gameId,revision:s.revision,seed:s.seed,ruleMode:s.ruleMode,viewer,openingSummary:s.openingSummary,
     phase:s.phase,currentPlayer:s.currentPlayer,actingPlayer,
     players:s.players.map(p=>({...p,hand:p.id===viewer||s.phase==='finished'?p.hand:null,handCount:p.hand.length,
       melds:p.melds.map(m=>({...m,tiles:m.type==='closed-kan'&&p.id!==viewer&&s.phase!=='finished'?null:m.tiles}))})),

@@ -1,5 +1,6 @@
 import type { GameAction, GameUI, PlayerId, PlayerView, Tile, UIHandlers, VisibleMeld } from '../contracts/game';
 import { tileLabel, NORMAL_TILE_CODES } from '../mahjong/tiles';
+import { PLAYER_IDS } from '../contracts/game';
 
 const SEATS: Record<PlayerId, string> = { east: '東家', south: '南家', west: '西家', north: '北家' };
 const escape = (value: string) => value.replace(/[&<>"']/g, (char) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]!));
@@ -39,21 +40,22 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
       || NORMAL_TILE_CODES.indexOf(a.code) - NORMAL_TILE_CODES.indexOf(b.code));
     const mode = view.ruleMode === 'flowers' ? '有花牌 · 144 張' : '無花牌 · 136 張';
     const selectedTile = own.hand?.find(tile => tile.id === selected);
+    const position=(id:PlayerId)=>['bottom','right','top','left'][(PLAYER_IDS.indexOf(id)-PLAYER_IDS.indexOf(view!.viewer)+4)%4];
     root.innerHTML = `<div class="game-shell">
       <header class="app-header"><div class="wordmark"><span class="brand-tile" aria-hidden="true">東</span><div><h1>一桌麻將</h1><span>TAIWANESE MAHJONG</span></div></div><div class="header-actions"><span class="offline-dot">單機練習</span><button class="quiet" data-settings>牌局設定</button></div></header>
       <main class="game-main"><div class="table-heading"><div><span class="eyebrow">十六張 · 單局</span><span class="mode-badge" data-mode>${mode}</span></div><span class="table-note">摸打與胡牌 · 不計台</span></div>
       <section class="felt" aria-label="四方麻將牌桌">
-        ${view.players.filter(player => player.id !== view!.viewer).map(player => `<section class="seat seat-${player.id} ${view!.actingPlayer === player.id ? 'is-acting' : ''}" aria-label="${SEATS[player.id]}">
-          <div class="seat-heading"><span class="seat-avatar">${SEATS[player.id][0]}</span><div><h2>${SEATS[player.id]} <span>電腦</span></h2><p>${player.handCount} 張手牌${view!.actingPlayer === player.id ? ' · 行動中' : ''}</p></div></div>
+        ${view.players.filter(player => player.id !== view!.viewer).map(player => `<section class="seat seat-${player.id} seat-${position(player.id)} ${view!.actingPlayer === player.id ? 'is-acting' : ''}" aria-label="${SEATS[player.id]}">
+          <div class="seat-heading"><span class="seat-avatar">${SEATS[player.id][0]}</span><div><h2>${SEATS[player.id]} <span>電腦</span>${player.id==='east'?'<span class="dealer">莊家</span>':''}</h2><p>${player.handCount} 張手牌${view!.actingPlayer === player.id ? ' · 行動中' : ''}</p></div></div>
           <div class="opponent-hand" aria-label="${player.hand === null ? '暗牌' : '終局手牌'}">${player.hand === null ? Array.from({length: player.handCount}, () => '<span class="tile-back" aria-hidden="true"></span>').join('') : exposed(player.hand, '無手牌')}</div>
           <div class="flower-line"><span class="zone-label">花</span>${exposed(player.flowers, '—')}</div>
           ${melds(player.melds,player.id)}
           <div class="river" aria-label="${SEATS[player.id]}牌河">${exposed(player.discards, '尚未出牌')}</div>
         </section>`).join('')}
         <section class="table-center" aria-label="目前牌局狀態"><div class="compass" aria-hidden="true">東</div><div class="wall-count"><strong>${view.wallRemaining}</strong><span>牌牆剩餘</span></div>${view.lastDiscard ? `<div class="last-discard"><span>${SEATS[view.lastDiscard.playerId]}打出</span><span class="tile">${tileFace(view.lastDiscard.tile)}</span></div>` : '<p class="center-note">一局一會<br>慢慢打，好好玩。</p>'}</section>
-        <section class="own-river"><span class="zone-label">你的牌河</span><div class="river" aria-label="東家牌河">${exposed(own.discards, '選一張手牌，開始這一局')}</div><div class="flower-line"><span class="zone-label">你的花牌</span>${exposed(own.flowers, '—')}</div></section>
+        <section class="own-river"><span class="zone-label">你的牌河</span><div class="river" aria-label="${SEATS[own.id]}牌河">${exposed(own.discards, '選一張手牌，開始這一局')}</div><div class="flower-line"><span class="zone-label">你的花牌</span>${exposed(own.flowers, '—')}</div></section>
       </section>
-      <section class="player-dock" aria-label="你的手牌與操作"><div class="dock-heading"><div class="seat-heading"><span class="seat-avatar own-avatar">東</span><div><h2>你 <span class="dealer">莊家</span></h2><p>${own.handCount} 張手牌</p></div></div><p class="turn-status" role="status">${escape(view.phase === 'finished' ? '本局結束' : submitted === revisionKey() ? '處理中…' : view.message)}</p></div>
+      <section class="player-dock" aria-label="你的手牌與操作"><div class="dock-heading"><div class="seat-heading"><span class="seat-avatar own-avatar">${SEATS[own.id][0]}</span><div><h2>你 · ${SEATS[own.id]} ${own.id==='east'?'<span class="dealer">莊家</span>':''}</h2><p>${own.handCount} 張手牌</p></div></div><p class="turn-status" role="status">${escape(view.phase === 'finished' ? '本局結束' : submitted === revisionKey() ? '處理中…' : view.message)}</p></div>
         ${melds(own.melds,own.id)}
         <div class="hand" aria-label="你的手牌">${orderedHand.map(tile => {
           const allowed = actions.some(action => action.type === 'discard' && action.tileId === tile.id);
@@ -75,6 +77,11 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
     actionHost.innerHTML=extra+actionHost.innerHTML;
     if(view.pendingKan) root.querySelector('.table-center')!.insertAdjacentHTML('beforeend',`<p class="rob-kan">${SEATS[view.pendingKan.playerId]}加槓 ${escape(tileLabel(view.pendingKan.tile.code))} · 等待搶槓回應</p>`);
     root.querySelector('.table-note')!.textContent='吃碰槓胡 · 不計台';
+    root.querySelector('.compass')!.textContent='↺';
+    if(view.openingSummary) {
+      const summary=document.createElement('p');summary.className='opening-summary';summary.textContent=view.openingSummary;
+      root.querySelector('.table-heading')!.after(summary);
+    }
     drawDialog();
   }
   function drawDialog(): void {
@@ -82,6 +89,10 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
     if (!host || !dialog) return;
     host.innerHTML = `<div class="modal-overlay"><section class="modal" role="${dialog === 'confirm' ? 'alertdialog' : 'dialog'}" aria-modal="true" aria-labelledby="dialog-title"><span class="eyebrow">NEW ROUND</span><h2 id="dialog-title">${dialog === 'confirm' ? '放棄目前牌局？' : '開一桌新牌局'}</h2>${dialog === 'confirm' ? '<p>目前牌局的進度將會結束，並使用新的設定重新發牌。</p><div class="modal-actions"><button class="secondary" data-cancel>繼續本局</button><button class="primary" data-confirm>確認重新開局</button></div>' : `<p>你是東家，與三位電腦玩家一起練習。</p><label class="rule-toggle" for="use-flowers"><span>使用花牌<small>春夏秋冬、梅蘭竹菊，遇花自動補牌</small></span><input id="use-flowers" type="checkbox" role="switch" ${draft.ruleMode === 'flowers' ? 'checked' : ''}></label><details><summary>進階設定</summary><label class="seed-label" for="seed">牌局 Seed</label><input id="seed" type="number" min="1" max="4294967295" step="1" value="${draft.seed}"><p class="seed-help">相同規則與 Seed 可重現相同起始牌局。</p></details><p class="settings-error" role="alert"></p><div class="modal-actions"><button class="secondary" data-cancel>取消</button><button class="primary" data-start>開始新牌局</button></div>`}</section></div>`;
     (host.querySelector('[data-cancel]') as HTMLElement)?.focus();
+    if(dialog==='settings') {
+      host.querySelector('.modal > p')!.textContent='與三位電腦玩家一起抓位、起莊，再擲骰開門。你固定顯示於下方。';
+      host.querySelector('.seed-help')!.textContent='相同規則、Seed 與抽牌選擇可重現相同起始牌局。';
+    }
   }
   function closeDialog(): void {
     dialog = null;
