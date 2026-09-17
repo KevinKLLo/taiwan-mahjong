@@ -1,5 +1,20 @@
 :root{font-family:"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:#19372f;background:#f2f0e8;font-synthesis:none}
 .meld-zone{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.meld-zone:empty{display:none}.meld-group{display:flex;flex-direction:column;gap:3px}.meld-group>div{display:flex;gap:2px}.player-dock .meld-group .zone-label{color:#526d5b}.action-buttons{flex-wrap:wrap;justify-content:flex-end}.rob-kan{font-size:11px;line-height:1.5;text-align:center;color:#f4e9c6}
+/* Visual clockwise order only: east (bottom), south (left), west (top), north (right).
+   Seat identity and the engine's claim/turn order remain unchanged. */
+.felt .seat-south{grid-column:1;grid-row:2;text-align:left}
+.felt .seat-west{grid-column:2;grid-row:1;text-align:center}
+.felt .seat-north{grid-column:3;grid-row:2;text-align:left}
+.felt .seat-west .seat-heading,.felt .seat-west .opponent-hand{justify-content:center}
+.felt .seat-north .seat-heading,.felt .seat-north .opponent-hand{justify-content:flex-start}
+@media(max-width:540px){
+  .game-main .felt{grid-template-columns:minmax(0,1fr) minmax(68px,.65fr) minmax(0,1fr);grid-template-rows:auto auto auto}
+  .felt .seat-west{grid-column:1/-1;grid-row:1}
+  .felt .table-center{grid-column:2;grid-row:2;min-width:0}
+  .felt .seat-heading{flex-wrap:wrap}
+  .felt .last-discard{flex-direction:column;gap:4px}
+  .felt .flower-line{flex-wrap:wrap}
+}
 *{box-sizing:border-box}body{margin:0;min-width:320px}button,input{font:inherit}button{cursor:pointer;border:0}button:disabled{cursor:default;opacity:.46}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #d59235;outline-offset:4px}h1,h2,p{margin:0}
 .game-shell{max-width:1500px;margin:auto}.app-header{height:86px;padding:18px 38px;border-bottom:1px solid #d7dbd3;display:flex;justify-content:space-between;align-items:center;background:#faf9f4}
 .wordmark,.header-actions,.seat-heading{display:flex;align-items:center;gap:12px}.brand-tile{display:grid;place-items:center;background:#173e33;color:#f7e9b9;font-family:serif;font-size:27px;border-radius:7px;width:42px;height:48px;box-shadow:0 3px 0 #b7c0b2}
