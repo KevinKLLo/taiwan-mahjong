@@ -1,6 +1,15 @@
 // @vitest-environment happy-dom
 import { expect,it,vi } from 'vitest';
 import { mountOpening } from '../../src/ui/opening';
+it('續局只顯示當局莊家擲骰，保留座位並回傳 seating',()=>{
+  const root=document.createElement('div'),start=vi.fn();
+  const seating={seats:['south','east','north','west'] as const,dealer:0};
+  const ui=mountOpening(root,{seed:99,ruleMode:'no-flowers'},start,{...seating,seats:[...seating.seats]},'東二局 · 連莊 0');
+  expect(root.textContent).toContain('東二局');expect(root.querySelector('[data-wind]')).toBeNull();
+  root.querySelector<HTMLButtonElement>('[data-roll]')!.click();expect(root.querySelectorAll('.dice-face')).toHaveLength(3);
+  root.querySelector<HTMLButtonElement>('[data-deal]')!.click();expect(start.mock.calls[0][0].viewer).toBe('east');
+  expect(start.mock.calls[0][1]).toEqual(seating);ui.destroy();
+});
 
 it('切換模式立即更新說明，非法 seed 保留在抓位前且顯示錯誤',()=>{
   const root=document.createElement('div');const ui=mountOpening(root,{seed:42,ruleMode:'flowers'},vi.fn());

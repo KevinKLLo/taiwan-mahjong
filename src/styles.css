@@ -1,4 +1,5 @@
 :root{font-family:"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:#19372f;background:#f2f0e8;font-synthesis:none}
+.match-progress{font-size:13px;line-height:1.8;margin:8px 0 12px;padding:10px 14px;background:#e3eadd;border:1px solid #c7d1c0;border-radius:7px}.match-result{border-top:1px solid #c7d1c0;margin-top:18px;padding-top:16px}.match-result h3{font-size:17px;margin:0 0 8px}.match-result details{margin-top:14px;text-align:left;font-size:13px;line-height:1.8}.match-result summary{cursor:pointer}.match-result ol{padding-left:22px;max-height:280px;overflow:auto}.round-record{padding:5px 0}
 .opening-shell{max-width:960px;margin:auto;padding:36px 24px}
 .opening-header{margin-bottom:24px}
 .opening-header h1{font-size:32px;margin:12px 0}

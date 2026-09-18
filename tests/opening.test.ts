@@ -5,6 +5,15 @@ import { buildWall } from '../src/mahjong/rules';
 import { PLAYER_IDS } from '../src/contracts/game';
 
 describe('骰子開局',()=>{
+  it('既有座位只擲一次開門，不再抓位／起莊；拒絕重複風位',()=>{
+    const seating={seats:['south','east','north','west'] as const,dealer:0};
+    const flow=createOpening({seed:104729,ruleMode:'flowers'},{...seating,seats:[...seating.seats]});
+    expect(flow.view().stage).toBe('wall-roll');expect(flow.view().rolls).toHaveLength(0);
+    expect(()=>flow.drawWind(0)).toThrow();flow.roll();
+    expect(flow.view().rolls).toHaveLength(1);expect(flow.view().rolls[0].roller).toBe(0);
+    expect(flow.view().stage).toBe('ready');expect(flow.gameConfig().viewer).toBe('east');
+    expect(()=>createOpening({seed:1,ruleMode:'flowers'},{seats:['east','east','west','north'],dealer:0})).toThrow();
+  });
   it('跨多組 seed 對照實際起莊、開門與人類門風，公開 view 無法修改內部狀態',()=>{
     const viewers=new Set<string>();
     for(let seed=1;seed<=80;seed++) {

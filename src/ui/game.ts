@@ -21,6 +21,7 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
   let view: PlayerView | null = null;
   let selected: string | null = null;
   let submitted: string | null = null;
+  let nextRequested: string | null = null;
   let error = '';
   let dialog: 'settings' | 'confirm' | null = null;
   let draft = { seed: 42, ruleMode: 'flowers' as PlayerView['ruleMode'] };
@@ -82,6 +83,27 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
       const summary=document.createElement('p');summary.className='opening-summary';summary.textContent=view.openingSummary;
       root.querySelector('.table-heading')!.after(summary);
     }
+    if(view.match) {
+      const m=view.match,person=(id:number)=>id===0?'你':`電腦 ${id}`;
+      const label=`東${['一','二','三','四'][m.dealerChanges]}局 · 連莊 ${m.continuations} · 第 ${m.roundNumber} 手`;
+      root.querySelector('.table-heading .eyebrow')!.textContent='十六張 · 東風一圈';
+      const progress=document.createElement('p');progress.className='match-progress';
+      progress.textContent=`${label} · 莊家：${person(m.dealer)} · 已下莊 ${m.status==='complete'?4:m.dealerChanges} / 4 次`;
+      root.querySelector('.table-heading')!.after(progress);
+      if(view.phase==='finished') {
+        root.querySelector('.turn-status')!.textContent=m.status==='complete'?'東風一圈完成':'本局結束';
+        root.querySelector('.action-hint')!.textContent='東風一圈 · 不計台';
+        const restart=root.querySelector<HTMLElement>('[data-new-game]')!;
+        restart.textContent='重新開圈';restart.className='secondary';
+        if(m.status==='between-rounds'&&handlers.onNextRound) restart.insertAdjacentHTML('beforebegin',`<button class="primary" data-next-round ${nextRequested===view.gameId?'disabled':''}>下一局 · 擲骰開門</button>`);
+        const result=root.querySelector('.result');
+        if(result) {
+          const next=m.next;
+          const summary=m.status==='complete'?'四次下莊完成，本圈結束。':next?`${next.dealer===m.dealer?'莊家續莊':'由下家接莊'}：${person(next.dealer)} · 東${['一','二','三','四'][next.dealerChanges]}局 · 連莊 ${next.continuations}`:'';
+          result.insertAdjacentHTML('beforeend',`<div class="match-result"><h3>${m.status==='complete'?'東風一圈完成':'下一局安排'}</h3><p>${summary}</p><details ${m.status==='complete'?'open':''}><summary>本圈紀錄（${m.history.length} 手）</summary><ol>${m.history.map(h=>`<li class="round-record">第 ${h.roundNumber} 手 · 東${['一','二','三','四'][h.dealerChanges]}局 · 連莊 ${h.continuations} · 莊家 ${person(h.dealer)}：${h.kind==='draw'?'流局':`${person(h.winner!)}${h.kind==='self-draw'?'自摸':'胡牌'}`}${h.from!==undefined?`，${person(h.from)}放槍`:''}</li>`).join('')}</ol></details></div>`);
+        }
+      }
+    }
     drawDialog();
   }
   function drawDialog(): void {
@@ -93,6 +115,13 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
       host.querySelector('.modal > p')!.textContent='與三位電腦玩家一起抓位、起莊，再擲骰開門。你固定顯示於下方。';
       host.querySelector('.seed-help')!.textContent='相同規則、Seed 與抽牌選擇可重現相同起始牌局。';
     }
+    if(view?.match) {
+      host.querySelector('#dialog-title')!.textContent=dialog==='confirm'?'放棄本圈進度？':'開一圈新牌局';
+      if(dialog==='confirm') {
+        host.querySelector('.modal > p')!.textContent='目前本圈的進度與紀錄將會清除，重新抓位與起莊。';
+        host.querySelector('[data-confirm]')!.textContent='確認重新開圈';
+      }
+    }
   }
   function closeDialog(): void {
     dialog = null;
@@ -102,7 +131,7 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
   }
   function openSettings(target: HTMLElement): void {
     if (!view) return;
-    draft = {seed: view.seed, ruleMode: view.ruleMode};
+    draft = {seed: view.match?.baseSeed??view.seed, ruleMode: view.ruleMode};
     returnFocus = target;
     dialog = 'settings';
     drawDialog();
@@ -117,6 +146,12 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
   function onClick(event: Event): void {
     const target = (event.target as HTMLElement).closest<HTMLElement>('button');
     if (!target || !root.contains(target) || (target as HTMLButtonElement).disabled || !view) return;
+    if(target.hasAttribute('data-next-round')) {
+      if(view.phase==='finished'&&view.match?.status==='between-rounds'&&nextRequested!==view.gameId&&handlers.onNextRound) {
+        nextRequested=view.gameId;draw();handlers.onNextRound(view.gameId);
+      }
+      return;
+    }
     if (target.hasAttribute('data-settings') || target.hasAttribute('data-new-game')) return openSettings(target);
     if (target.hasAttribute('data-cancel')) return closeDialog();
     if (target.hasAttribute('data-confirm')) { closeDialog(); handlers.onNewGame({...draft}); return; }
@@ -127,7 +162,7 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
         (root.querySelector('#seed') as HTMLInputElement).focus(); return;
       }
       draft = {seed, ruleMode: (root.querySelector('#use-flowers') as HTMLInputElement).checked ? 'flowers' : 'no-flowers'};
-      if (view.phase !== 'finished') { dialog = 'confirm'; drawDialog(); }
+      if (view.phase !== 'finished'||(view.match&&view.match.status!=='complete')) { dialog = 'confirm'; drawDialog(); }
       else { closeDialog(); handlers.onNewGame({...draft}); }
       return;
     }
@@ -161,7 +196,7 @@ export function mountGame(root: HTMLElement, handlers: UIHandlers): GameUI {
   return {
     render(next) {
       const changed = !view || next.gameId !== view.gameId || next.revision !== view.revision;
-      if (changed) { selected = null; submitted = null; error = ''; }
+      if (changed) { selected = null; submitted = null; nextRequested=null; error = ''; }
       if (view && next.gameId !== view.gameId) dialog = null;
       view = next;
       if (!dialog) draw();

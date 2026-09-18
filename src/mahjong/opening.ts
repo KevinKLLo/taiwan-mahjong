@@ -1,6 +1,7 @@
 import { PLAYER_IDS, type GameConfig, type PlayerId } from '../contracts/game';
 import type { RuleMode } from './rules';
 import { createSeededRandom, shuffle } from './random';
+import type { Seating } from '../contracts/match';
 
 export type OpeningStage = 'seat-roll' | 'wind-draw' | 'dealer-roll' | 'wall-roll' | 'ready';
 export interface DiceRoll { stage: OpeningStage; roller: number; dice: number[]; total: number }
@@ -29,13 +30,20 @@ export function wallOpening(mode:RuleMode, dealerSeat:number, total:number):Wall
     skippedStacks:stackStart%stacksPerSide,wallStart:stackStart*2,crossed:total>=stacksPerSide};
 }
 
-export function createOpening(config:Pick<GameConfig,'seed'|'ruleMode'>) {
+export function validateSeating(seating:Seating):void {
+  if(seating.seats.length!==4||new Set(seating.seats).size!==4||!seating.seats.every(w=>PLAYER_IDS.includes(w))||!Number.isInteger(seating.dealer)||seating.dealer<0||seating.dealer>3) throw Error('座位配置無效');
+}
+export function createOpening(config:Pick<GameConfig,'seed'|'ruleMode'>,seating?:Seating) {
   if(!Number.isInteger(config.seed)||config.seed<1||config.seed>0xffffffff) throw Error('Seed 無效');
   if(config.ruleMode!=='flowers'&&config.ruleMode!=='no-flowers') throw Error('規則模式無效');
   const diceRandom=createSeededRandom(config.seed^0x643c79a1);
   const winds=shuffle(PLAYER_IDS,createSeededRandom(config.seed^0x51ed270b));
   const state:OpeningView={...config,stage:'seat-roll',cards:winds.map(()=>({owner:null,wind:null})),
     seats:[null,null,null,null],firstDraw:null,dealer:null,rolls:[],opening:null};
+  if(seating) {
+    validateSeating(seating);state.stage='wall-roll';state.seats=[...seating.seats];state.dealer=seating.dealer;
+    state.cards=seating.seats.map((wind,owner)=>({wind,owner}));
+  }
   let drawIndex=0;
   const drawFor=(identity:number,index:number)=>{
     state.cards[index]={owner:identity,wind:winds[index]};state.seats[identity]=winds[index];drawIndex++;
@@ -77,7 +85,7 @@ export function createOpening(config:Pick<GameConfig,'seed'|'ruleMode'>) {
       const windLabel=(index:number)=>['東','南','西','北'][index];
       const opening=state.opening!;
       return {...config,viewer,wallStart:opening.wallStart,
-        openingSummary:`抓位${windLabel(PLAYER_IDS.indexOf(state.seats[0]!))} · 本局${windLabel(PLAYER_IDS.indexOf(viewer))}家 · 開門${state.rolls[2].total}點，${windLabel(opening.wallSeat)}牆起數${opening.crossed?'（跨邊）':''}`};
+        openingSummary:`抓位${windLabel(PLAYER_IDS.indexOf(state.seats[0]!))} · 本局${windLabel(PLAYER_IDS.indexOf(viewer))}家 · 開門${state.rolls.at(-1)!.total}點，${windLabel(opening.wallSeat)}牆起數${opening.crossed?'（跨邊）':''}`};
     },
   };
 }

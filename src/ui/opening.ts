@@ -1,12 +1,13 @@
-import { PLAYER_IDS, type GameConfig } from '../contracts/game';
+import { PLAYER_IDS, type GameConfig, type PlayerId } from '../contracts/game';
+import type { Seating } from '../contracts/match';
 import { createOpening, type OpeningStage } from '../mahjong/opening';
 
 const WIND={east:'東',south:'南',west:'西',north:'北'};
 const person=(id:number)=>id===0?'你':`電腦 ${id}`;
 const TITLES:Record<OpeningStage,string>={'seat-roll':'擲骰抓位','wind-draw':'抽一張風牌','dealer-roll':'擲骰起莊','wall-roll':'莊家另擲骰開門',ready:'開門完成'};
 const modeText=(flowers:boolean)=>`${flowers?'144 張 · 每邊 18 墩':'136 張 · 每邊 17 墩；18 點跨邊繼續數'} · 玩家／骰子逆時針，取牌沿牌牆順時針`;
-export function mountOpening(root:HTMLElement,config:Pick<GameConfig,'seed'|'ruleMode'>,start:(config:Omit<GameConfig,'gameId'>)=>void) {
-  let flow=createOpening(config),started=false,destroyed=false;
+export function mountOpening(root:HTMLElement,config:Pick<GameConfig,'seed'|'ruleMode'>,start:(config:Omit<GameConfig,'gameId'>,seating:Seating)=>void,seating?:Seating,title?:string) {
+  let flow=createOpening(config,seating),started=false,destroyed=false;
   function draw() {
     const v=flow.view(),rolled=v.stage!=='seat-roll';
     const dealerSeat=v.dealer===null?null:PLAYER_IDS.indexOf(v.seats[v.dealer]!);
@@ -21,11 +22,18 @@ export function mountOpening(root:HTMLElement,config:Pick<GameConfig,'seed'|'rul
         <div class="opening-step" aria-live="polite"><span class="eyebrow">${['seat-roll','wind-draw','dealer-roll','wall-roll','ready'].indexOf(v.stage)+1} / 5</span><h2>${TITLES[v.stage]}</h2>
         <p>${v.stage==='seat-roll'?'由你先擲骰，決定誰先抽風牌。':v.stage==='wind-draw'?`${person(v.firstDraw!)}先抽；電腦依序自動抽牌，現在請選一張剩餘牌背。`:v.stage==='dealer-roll'?`抽到東的${person(roller!)}擲骰，決定首任莊家。`:v.stage==='wall-roll'?`${person(v.dealer!)}是首任莊家，現在另擲三顆骰子決定開門。`:'座位與開門已決定，確認後才會發牌。'}</p></div>
         ${v.stage==='wind-draw'?`<div class="wind-cards">${v.cards.map((card,i)=>`<button class="wind-card" data-wind="${i}" ${card.owner!==null?'disabled':''} aria-label="${card.wind?`${person(card.owner!)}抽到${WIND[card.wind]}`:`抽第 ${i+1} 張風牌`}">${card.wind?WIND[card.wind]:'？'}<small>${card.owner!==null?person(card.owner):'風牌背面'}</small></button>`).join('')}</div>`:''}
-        ${v.opening?`<p class="wall-opening-result">從抓位${WIND[PLAYER_IDS[v.opening.wallSeat]]}牆右端數 ${v.rolls[2].total} 墩${v.opening.crossed?'，跨到下一邊':''}；從抓位${WIND[PLAYER_IDS[v.opening.startSeat]]}牆第 ${v.opening.skippedStacks+1} 墩開始取牌。</p>`:''}
+        ${v.opening?`<p class="wall-opening-result">從抓位${WIND[PLAYER_IDS[v.opening.wallSeat]]}牆右端數 ${v.rolls.at(-1)!.total} 墩${v.opening.crossed?'，跨到下一邊':''}；從抓位${WIND[PLAYER_IDS[v.opening.startSeat]]}牆第 ${v.opening.skippedStacks+1} 墩開始取牌。</p>`:''}
         <div class="opening-actions">${['seat-roll','dealer-roll','wall-roll'].includes(v.stage)?`<button class="primary" data-roll>${roller===0?'擲骰':`讓${person(roller!)}擲骰`}</button>`:''}${v.stage==='ready'?'<button class="primary" data-deal>開始發牌</button>':''}</div>
         <div class="dice-history" aria-label="擲骰紀錄">${v.rolls.map(roll=>`<section><h3>${TITLES[roll.stage]} · ${person(roll.roller)}</h3><div class="dice-row">${roll.dice.map(d=>`<span class="dice-face" role="img" aria-label="${d} 點">${['','⚀','⚁','⚂','⚃','⚄','⚅'][d]}</span>`).join('')}<strong>合計 ${roll.total}</strong></div></section>`).join('')}</div>
-        <p class="opening-error" role="alert"></p><p class="opening-footnote">擲骰者算 1 · 相同 Seed、規則與抽牌選擇可重現開局 · 本階段不計台、不連莊</p>
+        <p class="opening-error" role="alert"></p><p class="opening-footnote">擲骰者算 1 · 相同 Seed、規則與抽牌選擇可重現開局 · 東風一圈，不計台</p>
       </section></main>`;
+    if(title) root.querySelector('.opening-header .eyebrow')!.textContent=title;
+    if(seating) {
+      root.querySelector('.opening-header h1')!.textContent='新的一局，重新開門。';
+      root.querySelector('.opening-header p')!.textContent='保留抓位座位，由當局莊家擲骰開門。';
+      root.querySelector('.opening-step .eyebrow')!.textContent=v.stage==='ready'?'2 / 2':'1 / 2';
+      if(v.stage==='wall-roll') root.querySelector('.opening-step p')!.textContent=`${person(v.dealer!)}是當局莊家，擲三顆骰子決定本局開門。`;
+    }
   }
   function click(event:Event) {
     if(started||destroyed) return;
@@ -40,7 +48,10 @@ export function mountOpening(root:HTMLElement,config:Pick<GameConfig,'seed'|'rul
         }
         flow.roll();draw();
       } else if(button.hasAttribute('data-wind')) {flow.drawWind(Number(button.dataset.wind));draw();}
-      else if(button.hasAttribute('data-deal')) {const ready=flow.gameConfig();started=true;button.disabled=true;start(ready);}
+      else if(button.hasAttribute('data-deal')) {
+        const ready=flow.gameConfig(),v=flow.view();started=true;button.disabled=true;
+        start(ready,{seats:v.seats as PlayerId[],dealer:v.dealer!});
+      }
     } catch(error) {root.querySelector('.opening-error')!.textContent=error instanceof Error?error.message:'開局失敗';}
     if(!destroyed) root.querySelector<HTMLElement>('[data-roll], [data-wind]:not(:disabled), [data-deal]')?.focus();
   }

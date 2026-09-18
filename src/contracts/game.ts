@@ -1,5 +1,6 @@
 import type { TileCode } from '../mahjong/tiles';
 import type { RuleMode } from '../mahjong/rules';
+import type { MatchView } from './match';
 
 export type PlayerId = 'east' | 'south' | 'west' | 'north';
 export const PLAYER_IDS: readonly PlayerId[] = ['east', 'south', 'west', 'north'];
@@ -39,6 +40,7 @@ export interface VisiblePlayer {
   melds: VisibleMeld[];
 }
 export interface PlayerView {
+  match?: MatchView;
   openingSummary?: string;
   gameId: string;
   revision: number;
@@ -59,6 +61,7 @@ export interface PlayerView {
   message: string;
 }
 export interface UIHandlers {
+  onNextRound?(gameId:string): void;
   onAction(envelope: ActionEnvelope): void;
   /** UI handles restart confirmation, then supplies a validated seed and mode. */
   onNewGame(config: Omit<GameConfig, 'gameId'>): void;
