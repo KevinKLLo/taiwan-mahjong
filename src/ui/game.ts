@@ -1,13 +1,18 @@
 import type { GameAction, GameUI, PlayerId, PlayerView, Tile, UIHandlers, VisibleMeld } from '../contracts/game';
-import { tileLabel, NORMAL_TILE_CODES } from '../mahjong/tiles';
+import { tileLabel, NORMAL_TILE_CODES, type TileCode } from '../mahjong/tiles';
 import { PLAYER_IDS } from '../contracts/game';
 
 const SEATS: Record<PlayerId, string> = { east: '東家', south: '南家', west: '西家', north: '北家' };
 const escape = (value: string) => value.replace(/[&<>"']/g, (char) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]!));
-function tileFace(tile: Tile): string {
-  const label = tileLabel(tile.code);
-  const suit = /^[BCD][1-9]$/.test(tile.code) ? tile.code[0] : 'honor';
-  return `<span class="tile-ink ink-${suit}">${escape(label.length > 1 ? label[0] : label)}</span>${label.length > 1 ? `<small class="ink-${suit}">${escape(label.slice(1))}</small>` : ''}`;
+const TILE_ASSETS: Record<TileCode, string> = {
+  C1:'01_characters_1wan.svg', C2:'02_characters_2wan.svg', C3:'03_characters_3wan.svg', C4:'04_characters_4wan.svg', C5:'05_characters_5wan.svg', C6:'06_characters_6wan.svg', C7:'07_characters_7wan.svg', C8:'08_characters_8wan.svg', C9:'09_characters_9wan.svg',
+  B1:'10_bamboo_1suo.svg', B2:'11_bamboo_2suo.svg', B3:'12_bamboo_3suo.svg', B4:'13_bamboo_4suo.svg', B5:'14_bamboo_5suo.svg', B6:'15_bamboo_6suo.svg', B7:'16_bamboo_7suo.svg', B8:'17_bamboo_8suo.svg', B9:'18_bamboo_9suo.svg',
+  D1:'19_dots_1tong.svg', D2:'20_dots_2tong.svg', D3:'21_dots_3tong.svg', D4:'22_dots_4tong.svg', D5:'23_dots_5tong.svg', D6:'24_dots_6tong.svg', D7:'25_dots_7tong.svg', D8:'26_dots_8tong.svg', D9:'27_dots_9tong.svg',
+  F5:'28_flower_plum.svg', F6:'29_flower_orchid.svg', F8:'30_flower_chrysanthemum.svg', F7:'31_flower_bamboo.svg', F1:'32_flower_spring.svg', F2:'33_flower_summer.svg', F3:'34_flower_autumn.svg', F4:'35_flower_winter.svg',
+  WE:'36_honor_east.svg', WS:'37_honor_south.svg', WW:'38_honor_west.svg', WN:'39_honor_north.svg', DR:'40_honor_red_dragon.svg', DG:'41_honor_green_dragon.svg', DW:'42_honor_white_dragon.svg',
+};
+export function tileFace(tile: Tile): string {
+  return `<img class="tile-svg" src="${import.meta.env.BASE_URL}tiles/${TILE_ASSETS[tile.code]}" alt="" aria-hidden="true">`;
 }
 function exposed(tiles: Tile[], empty: string): string {
   return tiles.length ? tiles.map(tile => `<span class="tile tile-small" title="${escape(tileLabel(tile.code))}" aria-label="${escape(tileLabel(tile.code))}">${tileFace(tile)}</span>`).join('') : `<span class="empty">${empty}</span>`;

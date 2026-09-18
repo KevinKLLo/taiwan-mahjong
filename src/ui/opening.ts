@@ -1,11 +1,14 @@
 import { PLAYER_IDS, type GameConfig, type PlayerId } from '../contracts/game';
 import type { Seating } from '../contracts/match';
 import { createOpening, type OpeningStage } from '../mahjong/opening';
+import { FLOWER_TILE_CODES, HONOR_TILE_CODES, SUIT_TILE_CODES, tileLabel, type TileCode } from '../mahjong/tiles';
+import { tileFace } from './game';
 
 const WIND={east:'東',south:'南',west:'西',north:'北'};
 const person=(id:number)=>id===0?'你':`電腦 ${id}`;
 const TITLES:Record<OpeningStage,string>={'seat-roll':'擲骰抓位','wind-draw':'抽一張風牌','dealer-roll':'擲骰起莊','wall-roll':'莊家另擲骰開門',ready:'開門完成'};
 const modeText=(flowers:boolean)=>`${flowers?'144 張 · 每邊 18 墩':'136 張 · 每邊 17 墩；18 點跨邊繼續數'} · 玩家／骰子逆時針，取牌沿牌牆順時針`;
+const galleryGroup=(title:string,codes:readonly TileCode[])=>`<section class="tile-gallery-group"><h3>${title}</h3><div>${codes.map(code=>`<span class="tile gallery-tile" title="${tileLabel(code)}" aria-label="${tileLabel(code)}">${tileFace({id:`gallery-${code}`,code})}</span>`).join('')}</div></section>`;
 export function mountOpening(root:HTMLElement,config:Pick<GameConfig,'seed'|'ruleMode'>,start:(config:Omit<GameConfig,'gameId'>,seating:Seating)=>void,seating?:Seating,title?:string) {
   let flow=createOpening(config,seating),started=false,destroyed=false;
   function draw() {
@@ -18,6 +21,7 @@ export function mountOpening(root:HTMLElement,config:Pick<GameConfig,'seed'|'rul
       <section class="opening-panel" aria-label="骰子開局">
         <div class="opening-options"><label>使用花牌 <input data-flowers type="checkbox" role="switch" ${v.ruleMode==='flowers'?'checked':''} ${rolled?'disabled':''}></label><label>牌局 Seed <input data-seed type="number" min="1" max="4294967295" value="${v.seed}" ${rolled?'disabled':''}></label></div>
         <p class="opening-mode">${modeText(v.ruleMode==='flowers')}</p>
+        <details class="tile-gallery" open><summary>牌面圖鑑 · 42 種牌</summary><div class="tile-gallery-grid">${galleryGroup('條',SUIT_TILE_CODES.filter(code=>code.startsWith('B')))}${galleryGroup('萬',SUIT_TILE_CODES.filter(code=>code.startsWith('C')))}${galleryGroup('筒',SUIT_TILE_CODES.filter(code=>code.startsWith('D')))}${galleryGroup('風牌／三元牌',HONOR_TILE_CODES)}${galleryGroup('花牌',FLOWER_TILE_CODES)}</div></details>
         <div class="opening-table" aria-label="抓位座位圖">${v.seats.map((wind,id)=>`<div class="opening-seat opening-position-${relative(id)} ${id===v.dealer?'opening-dealer':''}"><strong>${person(id)}</strong><span>${wind?`抓位 ${WIND[wind]}`:'等待抽風牌'}</span>${dealerSeat!==null?`<span>本局 ${WIND[PLAYER_IDS[(PLAYER_IDS.indexOf(wind!)-dealerSeat+4)%4]]}家${id===v.dealer?' · 莊家':''}</span>`:''}</div>`).join('')}<div class="opening-center">↺<small>下 → 右 → 上 → 左</small></div></div>
         <div class="opening-step" aria-live="polite"><span class="eyebrow">${['seat-roll','wind-draw','dealer-roll','wall-roll','ready'].indexOf(v.stage)+1} / 5</span><h2>${TITLES[v.stage]}</h2>
         <p>${v.stage==='seat-roll'?'由你先擲骰，決定誰先抽風牌。':v.stage==='wind-draw'?`${person(v.firstDraw!)}先抽；電腦依序自動抽牌，現在請選一張剩餘牌背。`:v.stage==='dealer-roll'?`抽到東的${person(roller!)}擲骰，決定首任莊家。`:v.stage==='wall-roll'?`${person(v.dealer!)}是首任莊家，現在另擲三顆骰子決定開門。`:'座位與開門已決定，確認後才會發牌。'}</p></div>
