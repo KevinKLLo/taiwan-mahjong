@@ -30,6 +30,10 @@ npm run desktop:package
 
 操作：點選自己的牌後按「確認出牌」；有合法胡牌時顯示「胡牌／過」或「自摸」。牌局設定可選規則與進階 seed，進行中重開會要求確認。完整驗收狀態見 `openspec/changes/desktop-playable-mvp/verification.md`。
 
+## Web 部署
+
+GitHub Pages workflow 會在推送 `main` 時依序執行 `npm ci`、preflight、tests、build，成功後發布 `dist/`。首次部署需在 GitHub repository 的 Settings → Pages 將 Source 設為 **GitHub Actions**。Private repository 的 Pages 存取權由 GitHub 方案與 repository 設定決定；若無法啟用，保留 private repo 並改用 Cloudflare Pages。
+
 以下保留工作坊 starter 的背景與原始課程說明。
 
 這是數字科技四小時工程師工作坊的學員 Starter。專案使用 TypeScript、Vite 與 Vitest，呈現一個可重現牌局的台灣麻將 HTML5 小工具。
